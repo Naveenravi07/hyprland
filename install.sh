@@ -22,9 +22,9 @@ install_paru() {
 
     echo "==> Installing paru"
 
-    TMP_DIR=$(mktemp -d)
+    mkdir -p "$HOME/tmp"
 
-    git clone https://aur.archlinux.org/paru.git "$TMP_DIR/paru"
+    TMP_DIR=$(mktemp -d -p "$HOME/tmp")
 
     (
         cd "$TMP_DIR/paru"
