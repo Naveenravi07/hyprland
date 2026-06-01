@@ -4,13 +4,41 @@ set -e
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+
+install_prerequisites() {
+    echo "==> Installing prerequisites"
+
+    sudo pacman -Sy --needed --noconfirm \
+        git \
+        curl \
+        base-devel \
+        zsh
+}
+
+install_paru() {
+    if command -v paru >/dev/null 2>&1; then
+        return
+    fi
+
+    echo "==> Installing paru"
+
+    TMP_DIR=$(mktemp -d)
+
+    git clone https://aur.archlinux.org/paru.git "$TMP_DIR/paru"
+
+    (
+        cd "$TMP_DIR/paru"
+        makepkg -si --noconfirm
+    )
+
+    rm -rf "$TMP_DIR"
+}
+
 echo "==> Installing packages"
 
-if command -v paru >/dev/null 2>&1; then
-    paru -S --needed --noconfirm - < "$DOTFILES_DIR/packages-user.txt"
-else
-    echo "paru not found. Install paru first."
-fi
+install_prerequisites
+install_paru
+
 
 echo "==> Creating directories"
 
