@@ -26,6 +26,8 @@ install_paru() {
 
     TMP_DIR=$(mktemp -d -p "$HOME/tmp")
 
+    git clone https://aur.archlinux.org/paru.git "$TMP_DIR/paru"
+
     (
         cd "$TMP_DIR/paru"
         makepkg -si --noconfirm
