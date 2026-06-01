@@ -1,0 +1,136 @@
+#!/bin/bash
+WALL="$1"
+
+[ -z "$WALL" ] && { echo "Usage: $0 <wallpaper>"; exit 1; }
+[ ! -f "$WALL" ] && { echo "Error: File not found: $WALL"; exit 1; }
+
+MONITOR="HDMI-A-1"
+HYPRPAPER_CONF="$HOME/.config/hypr/hyprpaper.conf"
+
+# Update conf
+cat > "$HYPRPAPER_CONF" <<EOF
+preload = $WALL
+wallpaper {
+    monitor = $MONITOR
+    path = $WALL
+}
+splash = false
+EOF
+
+# Restart hyprpaper — it'll pick up the new conf
+pkill hyprpaper
+sleep 0.3
+hyprpaper &
+
+# Generate Pywal colors (This creates ~/.cache/wal/colors-gtk.css automatically)
+wal -i "$WALL"
+
+# --- GTK Theming Fix ---
+WAL_CACHE_DIR="$HOME/.cache/wal"
+GTK_DIR="$HOME/.config/gtk-3.0"
+mkdir -p "$GTK_DIR"
+
+# Read from pywal's sequential hex file (cleanest source, no labels)
+if [ -f "$WAL_CACHE_DIR/colors" ]; then
+    # Map colors from the raw 16-color list line-by-line
+    BG=$(sed -n '1p' "$WAL_CACHE_DIR/colors")
+    FG=$(sed -n '8p' "$WAL_CACHE_DIR/colors")
+    COLOR0=$(sed -n '1p' "$WAL_CACHE_DIR/colors")
+    COLOR4=$(sed -n '5p' "$WAL_CACHE_DIR/colors")
+
+    # Force strict trailing line/whitespace cleanup on the hex strings
+    BG=$(echo "$BG" | tr -d '\r\n[:space:]')
+    FG=$(echo "$FG" | tr -d '\r\n[:space:]')
+    COLOR0=$(echo "$COLOR0" | tr -d '\r\n[:space:]')
+    COLOR4=$(echo "$COLOR4" | tr -d '\r\n[:space:]')
+
+    # Atomically rewrite the ENTIRE config file from scratch
+cat > "$GTK_DIR/gtk.css" <<EOF
+@define-color theme_bg_color $BG;
+@define-color theme_fg_color $FG;
+@define-color theme_base_color $COLOR0;
+@define-color theme_text_color $FG;
+@define-color theme_selected_bg_color $COLOR4;
+@define-color theme_selected_fg_color $BG;
+
+/* GLOBAL */
+* {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+/* THUNAR WINDOW */
+window,
+window.background,
+.thunar,
+.thunar-window {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+/* HEADERBAR */
+headerbar,
+headerbar.titlebar {
+    background-color: shade(@theme_bg_color, 1.05);
+    color: @theme_fg_color;
+    border: none;
+}
+
+/* TOOLBAR */
+toolbar,
+.toolbar {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+/* SIDEBAR */
+.sidebar {
+    background-color: shade(@theme_bg_color, 0.95);
+    color: @theme_fg_color;
+}
+
+/* FILE VIEW */
+.view,
+treeview,
+scrolledwindow {
+    background-color: @theme_base_color;
+    color: @theme_text_color;
+}
+
+/* SELECTED */
+:selected {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+}
+
+/* BUTTONS */
+button {
+    background-color: shade(@theme_bg_color, 1.1);
+    color: @theme_fg_color;
+    border-radius: 6px;
+}
+
+/* INPUT */
+entry {
+    background-color: shade(@theme_bg_color, 0.9);
+    color: @theme_fg_color;
+}
+EOF
+fi
+
+# Kill background instances to force configuration reread
+thunar -q 2>/dev/null
+
+# Toggle GTK theme settings to apply live
+if command -v gsettings &> /dev/null; then
+    CURRENT_THEME=$(gsettings get org.gnome.desktop.interface gtk-theme | tr -d "'")
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
+    sleep 0.1
+    gsettings set org.gnome.desktop.interface gtk-theme "$CURRENT_THEME"
+fi
+# ------------------------
+
+# Reload Waybar
+pkill waybar; sleep 0.1; waybar &
+
+echo "Done: $WALL"

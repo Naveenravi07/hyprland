@@ -1,0 +1,8 @@
+#!/bin/bash
+
+prime-run ~/Android/Sdk/emulator/emulator \
+-avd Medium_Phone \
+-no-snapshot \
+-no-snapshot-load \
+-no-snapshot-save \
+-gpu host
