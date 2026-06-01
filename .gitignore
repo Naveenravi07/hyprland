@@ -1,0 +1,7 @@
+.cache/
+.zcompdump*
+.zsh_history
+
+.DS_Store
+
+home/.tmux/plugins/
