@@ -41,6 +41,11 @@ echo "==> Installing packages"
 install_prerequisites
 install_paru
 
+if command -v paru >/dev/null 2>&1; then
+    paru -S --needed --noconfirm - < "$DOTFILES_DIR/packages.txt"
+else
+    echo "paru installation failed. Skipping package installation."
+fi
 
 echo "==> Creating directories"
 
