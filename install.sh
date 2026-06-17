@@ -69,6 +69,7 @@ install_paru() {
   fi
 
   info "Installing paru"
+  mkdir -p "$HOME/tmp"                          
   local tmp_dir
   tmp_dir=$(mktemp -d -p "$HOME/tmp")
 
