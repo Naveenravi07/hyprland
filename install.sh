@@ -58,6 +58,15 @@ install_prerequisites() {
   info "Installing prerequisites"
   run sudo pacman -Sy --needed --noconfirm \
     git curl base-devel zsh rustup
+
+  # set default rust toolchain if not already set
+  if ! rustup toolchain list | grep -q stable; then
+    info "Setting up Rust stable toolchain"
+    run rustup default stable
+  fi
+
+  success "Prerequisites installed"
+
   success "Prerequisites installed"
 }
 
